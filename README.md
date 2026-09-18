@@ -1,5 +1,7 @@
 # InDesign MCP para Windows
 
+> **Uso por sua conta e risco.** Cada usuário é responsável pelas operações executadas, pelos backups e pela revisão dos resultados. Leia o [aviso de responsabilidade](#aviso-de-responsabilidade) antes de usar.
+
 Automação editorial com inteligência artificial para Adobe InDesign no Windows, uma iniciativa da **[Booknando](https://booknando.com.br/)**.
 
 A Booknando oferece **serviços e tecnologia para editoras**, combinando experiência em produção editorial com desenvolvimento de ferramentas que ajudam a melhorar a qualidade, a acessibilidade e a eficiência dos processos. Trabalhamos com livros digitais, EPUB, acessibilidade editorial e soluções para os desafios de produção das editoras.
@@ -180,6 +182,25 @@ Foram corrigidos também: captura de resultados em blocos condicionais, confirma
 Ferramentas avançadas herdadas, como EPUB, empacotamento, data merge, preflight e tratamentos tipográficos, precisam de validação adicional com documentos representativos do seu fluxo. Esta entrega não afirma certificação de todas as opções nem compatibilidade testada com outras versões do InDesign.
 
 Base estudada: commit `3e3f367634ff761455dcce06222b6e581fd8b7b3` do repositório original. A cópia em `upstream/` é apenas referência local e não faz parte do código distribuído. Veja `docs/PORTING.md` para as decisões técnicas.
+
+## Aviso de responsabilidade
+
+**Este software é utilizado por conta, risco e responsabilidade de cada usuário.** É fornecido no estado em que se encontra, sem garantias expressas ou implícitas, conforme a [licença MIT](LICENSE), incluindo garantias de funcionamento ininterrupto, ausência de erros, adequação a uma finalidade específica ou precisão dos resultados.
+
+O MCP permite que agentes de inteligência artificial executem operações no InDesign. Comandos incorretos, interpretações equivocadas ou falhas de execução podem modificar, sobrescrever ou excluir conteúdo e arquivos. A confirmação de uma operação pelo agente não substitui a avaliação do usuário.
+
+Cabe ao usuário:
+
+- Manter backups atualizados e testar as automações em cópias dos documentos antes de utilizá-las em produção.
+- Revisar os comandos, as permissões concedidas e os resultados antes de salvar, exportar, publicar ou entregar materiais.
+- Proteger informações confidenciais e verificar quais dados são compartilhados com os agentes e serviços de IA utilizados.
+- Obter as autorizações e licenças necessárias para os documentos, imagens, fontes, softwares e demais recursos envolvidos.
+
+**Na máxima extensão permitida pela legislação aplicável, a Booknando, os autores, os titulares dos direitos autorais e os colaboradores não se responsabilizam por perdas de dados, alterações ou corrupção de arquivos, interrupções de trabalho, lucros cessantes ou outros danos decorrentes do uso ou da impossibilidade de uso deste software.**
+
+A disponibilização deste projeto open source não inclui compromisso de suporte, manutenção, disponibilidade ou correção de falhas. Serviços profissionais eventualmente contratados com a Booknando seguem os termos do respectivo contrato.
+
+Este aviso complementa a licença MIT, sem alterar suas permissões nem afastar direitos ou responsabilidades que não possam ser excluídos pela legislação aplicável. O texto integral da licença está em [LICENSE](LICENSE).
 
 ## Licença e contribuições
 
