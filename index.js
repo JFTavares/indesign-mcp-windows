@@ -59,10 +59,10 @@ Type 'CONFIRM' to proceed or 'CANCEL' to abort:`;
     // For MCP context, we throw an error requiring explicit confirmation
     throw new McpError(
       ErrorCode.InvalidRequest,
-      `Security confirmation required for destructive operation: ${operation} on ${target}. 
-      
+      `Security confirmation required for destructive operation: ${operation} on ${target}.
+
 Add 'confirmDestructive: true' parameter to bypass this safety check.
-      
+
 CAUTION: Only do this if you understand the risks and have verified the operation details.`
     );
   }
@@ -739,9 +739,9 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           inputSchema: {
             type: 'object',
             properties: {
-              code: { 
-                type: 'string', 
-                description: 'ExtendScript/JavaScript code to execute in InDesign. WARNING: Can access filesystem, network, and system APIs!' 
+              code: {
+                type: 'string',
+                description: 'ExtendScript/JavaScript code to execute in InDesign. WARNING: Can access filesystem, network, and system APIs!'
               },
             },
             required: ['code'],
@@ -920,23 +920,23 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         info += "Left: " + doc.marginPreferences.left + "\\n";
         info += "Right: " + doc.marginPreferences.right + "\\n";
         info += "\\n=== CONTENT SUMMARY ===\\n";
-        
+
         var totalTextFrames = 0;
         var totalImages = 0;
         var totalShapes = 0;
-        
+
         for (var i = 0; i < doc.pages.length; i++) {
           totalTextFrames += doc.pages[i].textFrames.length;
           totalImages += doc.pages[i].rectangles.length; // Approximation
           totalShapes += doc.pages[i].ovals.length + doc.pages[i].polygons.length;
         }
-        
+
         info += "Text Frames: " + totalTextFrames + "\\n";
         info += "Images/Rectangles: " + totalImages + "\\n";
         info += "Shapes: " + totalShapes + "\\n";
         info += "Layers: " + doc.layers.length + "\\n";
         info += "Color Swatches: " + doc.swatches.length;
-        
+
         info;
       }
     `;
@@ -963,11 +963,11 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
     const script = `
       var doc = app.documents.add();
-      
+
       // Set measurement units to millimeters
       doc.viewPreferences.horizontalMeasurementUnits = MeasurementUnits.MILLIMETERS;
       doc.viewPreferences.verticalMeasurementUnits = MeasurementUnits.MILLIMETERS;
-      
+
       // Set document dimensions
       ${preset === 'Custom' && width && height ? `
         doc.documentPreferences.pageWidth = "${width}mm";
@@ -991,11 +991,11 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           doc.documentPreferences.pageHeight = "${orientation === 'Landscape' ? '215.9mm' : '355.6mm'}";
         }
       `}
-      
+
       // Document setup
       doc.documentPreferences.facingPages = ${facingPages};
       doc.documentPreferences.pagesPerDocument = ${pages};
-      
+
       // Bleed and slug
       if (${bleed} > 0) {
         doc.documentPreferences.documentBleedTopOffset = "${bleed}mm";
@@ -1003,21 +1003,21 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         doc.documentPreferences.documentBleedInsideOrLeftOffset = "${bleed}mm";
         doc.documentPreferences.documentBleedOutsideOrRightOffset = "${bleed}mm";
       }
-      
+
       if (${slug} > 0) {
         doc.documentPreferences.slugTopOffset = "${slug}mm";
         doc.documentPreferences.slugBottomOffset = "${slug}mm";
         doc.documentPreferences.slugInsideOrLeftOffset = "${slug}mm";
         doc.documentPreferences.slugRightOrOutsideOffset = "${slug}mm";
       }
-      
+
       // Margins
       doc.marginPreferences.top = "${marginTop}mm";
       doc.marginPreferences.bottom = "${marginBottom}mm";
       doc.marginPreferences.left = "${marginLeft}mm";
       doc.marginPreferences.right = "${marginRight}mm";
-      
-      "Document created: " + ${JSON.stringify(preset)} + " (" + doc.documentPreferences.pageWidth + " x " + doc.documentPreferences.pageHeight + "), " + 
+
+      "Document created: " + ${JSON.stringify(preset)} + " (" + doc.documentPreferences.pageWidth + " x " + doc.documentPreferences.pageHeight + "), " +
       doc.pages.length + " pages, " + (doc.documentPreferences.facingPages ? "facing pages" : "single pages");
     `;
 
@@ -1027,10 +1027,10 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
   async openDocument(args) {
     const { filePath } = args;
-    
+
     // Security: Validate file path
     const validatedPath = this.validateFilePath(filePath);
-    
+
     const script = `
       try {
         var file = File("${validatedPath.replace(/\\/g, '\\\\')}");
@@ -1051,15 +1051,15 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
   async saveDocument(args) {
     const { filePath } = args;
-    
+
     // Security: Require confirmation for destructive file operations
     if (filePath) {
       this.validateDestructiveOperation(args, 'SAVE DOCUMENT', filePath);
     }
-    
+
     // Security: Validate file path if provided
     const validatedPath = filePath ? this.validateFilePath(filePath) : null;
-    
+
     const script = `
       if (app.documents.length === 0) {
         "No document open to save";
@@ -1090,14 +1090,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
   async closeDocument(args) {
     const { save = false } = args;
-    
+
     // Security: Require confirmation if closing with save or potential data loss
     if (save) {
       this.validateDestructiveOperation(args, 'CLOSE AND SAVE DOCUMENT', 'current document');
     } else {
       this.validateDestructiveOperation(args, 'CLOSE WITHOUT SAVING', 'unsaved changes will be lost');
     }
-    
+
     const script = `
       if (app.documents.length === 0) {
         "No document open to close";
@@ -1120,7 +1120,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
   // =================== PAGE MANAGEMENT ===================
   async addPage(args) {
     const { position = 'end', pageIndex, masterPage } = args;
-    
+
     const script = `
       if (app.documents.length === 0) {
         "No document open";
@@ -1128,21 +1128,21 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var newPage;
-          
+
           ${position === 'end' ? `
             newPage = doc.pages.add();
           ` : `
             var refPage = doc.pages[${pageIndex || 0}];
             newPage = doc.pages.add(${position === 'before' ? 'LocationOptions.BEFORE' : 'LocationOptions.AFTER'}, refPage);
           `}
-          
+
           ${masterPage ? `
             var master = doc.masterSpreads.itemByName(${JSON.stringify(masterPage)});
             if (master.isValid) {
               newPage.appliedMaster = master;
             }
           ` : ''}
-          
+
           "Page added at position " + (newPage.documentOffset + 1) + ". Total pages: " + doc.pages.length;
         } catch (e) {
           "Error adding page: " + e.message;
@@ -1156,10 +1156,10 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
   async deletePage(args) {
     const { pageIndex } = args;
-    
+
     // Security: Require confirmation for page deletion
     this.validateDestructiveOperation(args, 'DELETE PAGE', `page ${pageIndex + 1} and all its content`);
-    
+
     const script = `
       if (app.documents.length === 0) {
         "No document open";
@@ -1187,7 +1187,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
   async duplicatePage(args) {
     const { pageIndex, position = 'after' } = args;
-    
+
     const script = `
       if (app.documents.length === 0) {
         "No document open";
@@ -1199,12 +1199,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           } else {
             var sourcePage = doc.pages[${pageIndex}];
             var newPage = doc.pages.add(${position === 'before' ? 'LocationOptions.BEFORE' : 'LocationOptions.AFTER'}, sourcePage);
-            
+
             // Copy all page items
             for (var i = 0; i < sourcePage.allPageItems.length; i++) {
               sourcePage.allPageItems[i].duplicate(newPage);
             }
-            
+
             "Page " + (${pageIndex} + 1) + " duplicated. New page position: " + (newPage.documentOffset + 1);
           }
         } catch (e) {
@@ -1219,7 +1219,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
   async navigateToPage(args) {
     const { pageIndex } = args;
-    
+
     const script = `
       if (app.documents.length === 0) {
         "No document open";
@@ -1243,7 +1243,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
   }
 
   // =================== TEXT MANAGEMENT ===================
-  
+
   async getSelectedObjects() {
     const script = `
       if (app.documents.length === 0) {
@@ -1251,23 +1251,23 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
       } else {
         var doc = app.activeDocument;
         var selection = app.selection;
-        
+
         if (selection.length === 0) {
           "No objects selected. Please select a text frame or other object first.";
         } else {
           var result = "=== SELECTED OBJECTS ===\\n";
-          
+
           for (var i = 0; i < selection.length; i++) {
             var obj = selection[i];
             result += "Object " + i + ": ";
-            
+
             if (obj.hasOwnProperty('contents')) {
               // Text frame
               result += "Text Frame";
               var content = String(obj.contents).substring(0, 50);
               if (String(obj.contents).length > 50) content += "...";
               result += " - Content: " + content;
-              
+
               // Find frame index on current page
               var currentPage = app.activeWindow.activePage;
               for (var j = 0; j < currentPage.textFrames.length; j++) {
@@ -1283,7 +1283,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             }
             result += "\\n";
           }
-          
+
           result;
         }
       }
@@ -1303,11 +1303,11 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         var textContent = null;
         var source = "";
-        
+
         // Strategy 1: Try to get text from selection
         if (app.selection.length > 0) {
           var sel = app.selection[0];
-          
+
           if (sel.hasOwnProperty('contents') && sel.contents && sel.contents.length > 0) {
             // Direct text frame selection with content
             textContent = sel.contents;
@@ -1324,7 +1324,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             source = "Selected object (" + sel.constructor.name + ") has no text content";
           }
         }
-        
+
         // Strategy 2: Use specific frame index if no selection or selection has no text
         if (!textContent && typeof ${frameIndex} === "number") {
           try {
@@ -1339,27 +1339,27 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             source = "ERROR: " + e.message;
           }
         }
-        
+
         // Process text content
         if (textContent) {
           var result = "=== TEXT CONTENT ===\\n";
           result += "Source: " + source + "\\n";
           result += "Original length: " + textContent.length + " characters\\n\\n";
-          
+
           var processedText = textContent;
-          
+
           // Normalize spaces if requested
           ${normalizeSpaces ? `
             // Convert all types of line breaks to spaces
             processedText = processedText.replace(/\\r\\n/g, ' ');  // Windows
-            processedText = processedText.replace(/\\r/g, ' ');    // Mac  
+            processedText = processedText.replace(/\\r/g, ' ');    // Mac
             processedText = processedText.replace(/\\n/g, ' ');    // Unix
-            
+
             // Remove multiple spaces
             while (processedText.indexOf('  ') !== -1) {
               processedText = processedText.replace(/  /g, ' ');
             }
-            
+
             // Remove leading/trailing spaces (manual trim)
             while (processedText.charAt(0) === ' ') {
               processedText = processedText.substring(1);
@@ -1368,7 +1368,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               processedText = processedText.substring(0, processedText.length - 1);
             }
           ` : ''}
-          
+
           // Apply length limit if specified
           ${maxLength > 0 ? `
             if (processedText.length > ${maxLength}) {
@@ -1376,7 +1376,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               result += "Text truncated to " + ${maxLength} + " characters\\n\\n";
             }
           ` : ''}
-          
+
           result += "TEXT:\\n" + processedText;
           result;
         } else {
@@ -1391,7 +1391,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
 
   async listTextFrames(args) {
     const { pageIndex = 0 } = args;
-    
+
     const script = `
       if (app.documents.length === 0) {
         "No document open";
@@ -1403,7 +1403,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           } else {
             var page = doc.pages[${pageIndex}];
             var result = "=== TEXT FRAMES ON PAGE " + (${pageIndex} + 1) + " ===\\n";
-            
+
             if (page.textFrames.length === 0) {
               result += "No text frames found on this page.\\n";
               result += "TIP: Create a text frame first or select an existing one.";
@@ -1412,7 +1412,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 var frame = page.textFrames[i];
                 var content = frame.contents.substring(0, 60);
                 if (frame.contents.length > 60) content += "...";
-                
+
                 result += "Frame " + i + ": ";
                 if (content.length === 0) {
                   result += "(empty frame)";
@@ -1423,7 +1423,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               }
               result += "\\nUSAGE: Use frameIndex 0-" + (page.textFrames.length - 1) + " with edit_text_frame()";
             }
-            
+
             result;
           }
         } catch (e) {
@@ -1445,7 +1445,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
       } else {
         var doc = app.activeDocument;
         var frame = null;
-        
+
         // Try to get frame from selection or frameIndex
         if (app.selection.length > 0 && app.selection[0].hasOwnProperty('contents')) {
           frame = app.selection[0];
@@ -1455,45 +1455,45 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             frame = page.textFrames[${frameIndex}];
           }
         }
-        
+
         if (!frame) {
           "ERROR: No text frame found. Select a frame or specify frameIndex.";
         } else {
           var result = "=== EMBEDDED OBJECTS ANALYSIS ===\\n\\n";
-          
+
           // Check if frame contains a table
           var hasTable = false;
           var table = null;
-          
+
           try {
             if (frame.texts && frame.texts.length > 0 && frame.texts[0].tables && frame.texts[0].tables.length > 0) {
               hasTable = true;
               table = frame.texts[0].tables[0];
             }
           } catch (e) {}
-          
+
           if (hasTable) {
             result += "FRAME TYPE: Contains TABLE\\n";
             result += "Table: " + table.rows.length + " rows x " + table.columns.length + " columns\\n\\n";
-            
+
             // Analyze first few cells
             result += "=== FIRST " + Math.min(${maxObjects}, table.cells.length) + " CELLS ===\\n";
             for (var i = 0; i < Math.min(${maxObjects}, table.cells.length); i++) {
               var cell = table.cells[i];
               result += "\\nCell " + i + " (Row " + cell.rowIndex + ", Col " + cell.columnIndex + "):\\n";
               result += "  Content: " + String(cell.contents).substring(0, 100) + "\\n";
-              
+
               // Check for embedded objects in cell
               if (cell.epstexts && cell.epstexts.length > 0) {
                 result += "  EPSTexts: " + cell.epstexts.length + "\\n";
               }
               if (cell.pageItems && cell.pageItems.length > 0) {
                 result += "  Page Items: " + cell.pageItems.length + "\\n";
-                
+
                 // Check first page item
                 var pItem = cell.pageItems[0];
                 result += "  First Item Type: " + pItem.constructor.name + "\\n";
-                
+
                 // If it's a group, check inside
                 if (pItem.constructor.name === "Group" && pItem.allPageItems) {
                   result += "  Group contains: " + pItem.allPageItems.length + " items\\n";
@@ -1506,12 +1506,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           } else {
             result += "FRAME TYPE: Regular text frame\\n\\n";
           }
-          
+
           // Check for different types of embedded content
           result += "EPSTexts (formulas/EPS): " + frame.epstexts.length + "\\n";
           result += "Page Items (anchored): " + frame.pageItems.length + "\\n";
           result += "All Page Items: " + frame.allPageItems.length + "\\n\\n";
-          
+
           // Analyze EPSTexts (MathML formulas are often EPS)
           if (frame.epstexts.length > 0) {
             result += "=== EPS TEXTS (First " + Math.min(${maxObjects}, frame.epstexts.length) + ") ===\\n";
@@ -1520,7 +1520,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               result += "\\nObject " + i + ":\\n";
               result += "  Label: " + eps.label + "\\n";
               result += "  ID: " + eps.id + "\\n";
-              
+
               // Try to get fill color
               try {
                 if (eps.fillColor && eps.fillColor.name) {
@@ -1533,7 +1533,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               } catch (e) {
                 result += "  Fill Color: (cannot access)\\n";
               }
-              
+
               // Try to get bounds
               try {
                 if (eps.geometricBounds) {
@@ -1542,7 +1542,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               } catch (e) {}
             }
           }
-          
+
           // Analyze PageItems
           if (frame.pageItems.length > 0) {
             result += "\\n=== PAGE ITEMS (First " + Math.min(${maxObjects}, frame.pageItems.length) + ") ===\\n";
@@ -1551,7 +1551,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               result += "\\nItem " + i + ":\\n";
               result += "  Type: " + item.constructor.name + "\\n";
               result += "  Label: " + item.label + "\\n";
-              
+
               // List available properties (only for first item)
               if (i === 0) {
                 result += "  Properties: ";
@@ -1567,7 +1567,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 }
                 result += props.slice(0, 30).join(", ") + "\\n";
               }
-              
+
               // Check if it's a group or has sub-items
               try {
                 if (item.allPageItems && item.allPageItems.length > 0) {
@@ -1576,41 +1576,41 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                   result += "  First sub-item type: " + firstItem.constructor.name + "\\n";
                 }
               } catch (e) {}
-              
+
               // Check content type
               try {
                 if (item.contentType) {
                   result += "  Content Type: " + item.contentType + "\\n";
                 }
               } catch (e) {}
-              
+
               // Check if it's a rectangle with graphic
               try {
                 if (item.graphics && item.graphics.length > 0) {
                   result += "  Has Graphics: " + item.graphics.length + "\\n";
                   var graphic = item.graphics[0];
                   result += "  Graphic Type: " + graphic.constructor.name + "\\n";
-                  
+
                   // Try to get the actual file link
                   if (graphic.itemLink && graphic.itemLink.filePath) {
                     result += "  Linked File: " + graphic.itemLink.filePath + "\\n";
                   }
                 }
               } catch (e) {}
-              
+
               // Try alternative access via allGraphics
               try {
                 if (item.allGraphics && item.allGraphics.length > 0) {
                   result += "  AllGraphics: " + item.allGraphics.length + "\\n";
                   var gfx = item.allGraphics[0];
                   result += "  Graphic Type: " + gfx.constructor.name + "\\n";
-                  
+
                   // Try to access EPS/PDF content
                   if (gfx.itemLink) {
                     result += "  Link Name: " + gfx.itemLink.name + "\\n";
                     result += "  Link Status: " + gfx.itemLink.status + "\\n";
                   }
-                  
+
                   // Try to get PDF/EPS data
                   if (gfx.pdfAttributes) {
                     result += "  Has PDF Attributes\\n";
@@ -1622,14 +1622,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               } catch (e) {
                 result += "  AllGraphics Error: " + e.message + "\\n";
               }
-              
+
               // Try to access XML content (MathML)
               try {
                 if (item.associatedXMLElement) {
                   var xmlElem = item.associatedXMLElement;
                   result += "  Has XML Element: YES\\n";
                   result += "  XML Tag: " + xmlElem.markupTag.name + "\\n";
-                  
+
                   // Try to get MathML content
                   if (xmlElem.contents) {
                     var xmlContent = String(xmlElem.contents).substring(0, 500);
@@ -1639,14 +1639,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               } catch (e) {
                 result += "  XML Error: " + e.message + "\\n";
               }
-              
+
               // Check if it contains EPSText
               try {
                 if (item.epstexts && item.epstexts.length > 0) {
                   result += "  Contains EPSTexts: " + item.epstexts.length + "\\n";
                   var eps = item.epstexts[0];
                   result += "  EPS Label: " + eps.label + "\\n";
-                  
+
                   // Try to get EPS content
                   if (eps.epsContent) {
                     var epsContent = String(eps.epsContent).substring(0, 500);
@@ -1654,7 +1654,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                   }
                 }
               } catch (e) {}
-              
+
               // Try to get fill color
               try {
                 if (item.fillColor && item.fillColor.name) {
@@ -1667,7 +1667,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               } catch (e) {}
             }
           }
-          
+
           result;
         }
       }
@@ -1678,12 +1678,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
   }
 
   async insertMarkdownText(args) {
-    const { 
-      markdownText, 
-      frameIndex, 
-      pageIndex = 0, 
-      useSelectedFrame = false, 
-      replaceContent = true 
+    const {
+      markdownText,
+      frameIndex,
+      pageIndex = 0,
+      useSelectedFrame = false,
+      replaceContent = true
     } = args;
 
     const script = `
@@ -1693,7 +1693,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var textFrame;
-          
+
           ${useSelectedFrame ? `
             // Use selected frame
             var selection = app.selection;
@@ -1711,21 +1711,21 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               textFrame = page.textFrames[${frameIndex}];
             }
           `}
-          
+
           if (textFrame) {
             // Convert markdown to formatted text
             var markdownContent = ${JSON.stringify(markdownText)};
-            
+
             ${replaceContent ? 'textFrame.contents = "";' : ''}
-            
+
             // Simple markdown parsing
             var lines = markdownContent.split('\\n');
             var story = textFrame.parentStory;
             var insertionPoint = story.insertionPoints[-1];
-            
+
             for (var i = 0; i < lines.length; i++) {
               var line = lines[i];
-              
+
               // Skip empty lines but add paragraph break
               if (line.trim() === '') {
                 if (i < lines.length - 1) {
@@ -1734,14 +1734,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 }
                 continue;
               }
-              
+
               // Headers
               if (line.match(/^#{1,6}\\s/)) {
                 var level = line.match(/^#{1,6}/)[0].length;
                 var headerText = line.replace(/^#{1,6}\\s/, '');
-                
+
                 insertionPoint.contents = headerText;
-                
+
                 // Apply header style based on level
                 var headerStyle = null;
                 var styleNames = ["Header 1", "Heading 1", "H1", "Header1"];
@@ -1751,7 +1751,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                     if (headerStyle.isValid) break;
                   } catch (e) {}
                 }
-                
+
                 if (headerStyle && headerStyle.isValid) {
                   var range = story.characters.itemByRange(
                     insertionPoint.index - headerText.length,
@@ -1759,14 +1759,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                   );
                   range.appliedParagraphStyle = headerStyle;
                 }
-                
+
               }
               // Bold text **text**
               else if (line.indexOf('**') !== -1) {
                 var parts = line.split('**');
                 for (var p = 0; p < parts.length; p++) {
                   insertionPoint.contents = parts[p];
-                  
+
                   if (p % 2 === 1) { // Bold parts
                     var boldStyle = null;
                     try {
@@ -1775,7 +1775,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                         boldStyle = doc.characterStyles.itemByName("Strong");
                       }
                     } catch (e) {}
-                    
+
                     if (boldStyle && boldStyle.isValid) {
                       var range = story.characters.itemByRange(
                         insertionPoint.index - parts[p].length,
@@ -1799,7 +1799,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 var parts = line.split('*');
                 for (var p = 0; p < parts.length; p++) {
                   insertionPoint.contents = parts[p];
-                  
+
                   if (p % 2 === 1) { // Italic parts
                     var italicStyle = null;
                     try {
@@ -1808,7 +1808,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                         italicStyle = doc.characterStyles.itemByName("Emphasis");
                       }
                     } catch (e) {}
-                    
+
                     if (italicStyle && italicStyle.isValid) {
                       var range = story.characters.itemByRange(
                         insertionPoint.index - parts[p].length,
@@ -1832,14 +1832,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 insertionPoint.contents = line;
                 insertionPoint = story.insertionPoints[-1];
               }
-              
+
               // Add paragraph break except for last line
               if (i < lines.length - 1) {
                 insertionPoint.contents = '\\r';
                 insertionPoint = story.insertionPoints[-1];
               }
             }
-            
+
             "Markdown text inserted successfully. Applied available paragraph and character styles.";
           }
         } catch (e) {
@@ -1853,12 +1853,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
   }
 
   async fixTypographyInSelection(args) {
-    const { 
-      frameIndex, 
-      pageIndex = 0, 
+    const {
+      frameIndex,
+      pageIndex = 0,
       useSelectedFrame = false,
       fixDates = true,
-      fixQuotes = true, 
+      fixQuotes = true,
       fixDashes = true,
       fixSpaces = true
     } = args;
@@ -1870,7 +1870,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var textFrame;
-          
+
           ${useSelectedFrame ? `
             var selection = app.selection;
             if (selection.length === 0 || !selection[0].hasOwnProperty('contents')) {
@@ -1886,13 +1886,13 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               textFrame = page.textFrames[${frameIndex}];
             }
           `}
-          
+
           if (textFrame) {
             var story = textFrame.parentStory;
             var content = story.contents;
             var changes = 0;
             var changeLog = "=== TYPOGRAPHY FIXES ===\\n";
-            
+
             ${fixDates ? `
               // Use existing GREP search "DATUM" if available, otherwise fallback to pattern
               try {
@@ -1901,11 +1901,11 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                   // Clear preferences
                   app.findGrepPreferences = NothingEnum.nothing;
                   app.changeGrepPreferences = NothingEnum.nothing;
-                  
+
                   // Load existing DATUM search
                   app.findGrepPreferences.findWhat = datumQuery.findWhat;
                   var foundDates = story.findGrep();
-                  
+
                   if (foundDates.length > 0) {
                     for (var d = 0; d < foundDates.length; d++) {
                       var dateText = foundDates[d].contents;
@@ -1916,7 +1916,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                     changes += foundDates.length;
                     changeLog += "Fixed " + foundDates.length + " date(s) using DATUM search with thin spaces\\n";
                   }
-                  
+
                   // Clear preferences
                   app.findGrepPreferences = NothingEnum.nothing;
                   app.changeGrepPreferences = NothingEnum.nothing;
@@ -1937,7 +1937,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 }
               }
             ` : ''}
-            
+
             ${fixQuotes ? `
               // Fix straight quotes to typographic quotes
               var beforeQuotes = (story.contents.match(/"/g) || []).length;
@@ -1948,7 +1948,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += Math.floor(beforeQuotes/2);
               }
             ` : ''}
-            
+
             ${fixDashes ? `
               // Fix double hyphens to em dashes
               var dashMatches = (story.contents.match(/--/g) || []).length;
@@ -1957,7 +1957,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += dashMatches;
                 changeLog += "Fixed " + dashMatches + " double hyphen(s) to em dash\\n";
               }
-              
+
               // Fix space-hyphen-space to en dash
               var enDashMatches = (story.contents.match(/ - /g) || []).length;
               if (enDashMatches > 0) {
@@ -1966,7 +1966,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "Fixed " + enDashMatches + " hyphen(s) to en dash\\n";
               }
             ` : ''}
-            
+
             ${fixSpaces ? `
               // Fix multiple spaces
               var multiSpaceMatches = (story.contents.match(/  +/g) || []).length;
@@ -1975,7 +1975,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += multiSpaceMatches;
                 changeLog += "Fixed " + multiSpaceMatches + " multiple space(s)\\n";
               }
-              
+
               // Fix trailing spaces
               var lines = story.contents.split('\\r');
               var trailingSpaces = 0;
@@ -1991,13 +1991,13 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "Fixed " + trailingSpaces + " trailing space(s)\\n";
               }
             ` : ''}
-            
+
             if (changes > 0) {
               changeLog += "\\nTotal fixes applied: " + changes;
             } else {
               changeLog += "No typography issues found.";
             }
-            
+
             changeLog;
           }
         } catch (e) {
@@ -2020,7 +2020,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var textFrame;
-          
+
           ${useSelectedFrame ? `
             var selection = app.selection;
             if (selection.length === 0 || !selection[0].hasOwnProperty('contents')) {
@@ -2036,12 +2036,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               textFrame = page.textFrames[${frameIndex}];
             }
           `}
-          
+
           if (textFrame) {
             var content = textFrame.contents;
             var issues = "=== TYPOGRAPHY ANALYSIS ===\\n";
             var problemCount = 0;
-            
+
             // Check for dates with wrong spacing using DATUM search if available
             try {
               var datumQuery = doc.findGrepPreferences.itemByName("DATUM");
@@ -2049,10 +2049,10 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 app.findGrepPreferences = NothingEnum.nothing;
                 app.findGrepPreferences.findWhat = datumQuery.findWhat;
                 var foundDates = textFrame.parentStory.findGrep();
-                
+
                 var wrongSpaceDates = 0;
                 var correctSpaceDates = 0;
-                
+
                 for (var d = 0; d < foundDates.length; d++) {
                   var dateText = foundDates[d].contents;
                   if (dateText.indexOf('\\u2009') === -1 && dateText.match(/\\d{1,2}\\. \\d{1,2}\\. \\d{4}/)) {
@@ -2061,7 +2061,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                     correctSpaceDates++;
                   }
                 }
-                
+
                 if (wrongSpaceDates > 0) {
                   issues += "❌ " + wrongSpaceDates + " date(s) with normal spaces (found via DATUM search)\\n";
                   problemCount += wrongSpaceDates;
@@ -2069,7 +2069,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 if (correctSpaceDates > 0) {
                   issues += "✅ " + correctSpaceDates + " date(s) with correct thin spaces\\n";
                 }
-                
+
                 app.findGrepPreferences = NothingEnum.nothing;
               } else {
                 throw new Error("DATUM search not found");
@@ -2081,41 +2081,41 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 issues += "❌ " + wrongDateSpaces.length + " date(s) with normal spaces (fallback pattern)\\n";
                 problemCount += wrongDateSpaces.length;
               }
-              
+
               var correctDates = content.match(/\\d{1,2}\\.\\u2009\\d{1,2}\\.\\u2009\\d{4}/g);
               if (correctDates) {
                 issues += "✅ " + correctDates.length + " date(s) with correct thin spaces\\n";
               }
             }
-            
+
             // Check for straight quotes
             var straightQuotes = (content.match(/"/g) || []).length;
             if (straightQuotes > 0) {
               issues += "❌ " + straightQuotes + " straight quote(s) found\\n";
               problemCount += straightQuotes;
             }
-            
+
             // Check for double hyphens
             var doubleHyphens = (content.match(/--/g) || []).length;
             if (doubleHyphens > 0) {
               issues += "❌ " + doubleHyphens + " double hyphen(s) (should be em dash)\\n";
               problemCount += doubleHyphens;
             }
-            
+
             // Check for space-hyphen-space
             var spaceHyphens = (content.match(/ - /g) || []).length;
             if (spaceHyphens > 0) {
               issues += "❌ " + spaceHyphens + " space-hyphen-space (should be en dash)\\n";
               problemCount += spaceHyphens;
             }
-            
+
             // Check for multiple spaces
             var multiSpaces = (content.match(/  +/g) || []).length;
             if (multiSpaces > 0) {
               issues += "❌ " + multiSpaces + " multiple space(s) found\\n";
               problemCount += multiSpaces;
             }
-            
+
             // Check for trailing spaces
             var lines = content.split('\\r');
             var trailingSpaces = 0;
@@ -2128,7 +2128,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               issues += "❌ " + trailingSpaces + " line(s) with trailing spaces\\n";
               problemCount += trailingSpaces;
             }
-            
+
             issues += "\\n=== SUMMARY ===\\n";
             if (problemCount > 0) {
               issues += "Found " + problemCount + " typography issue(s)\\n";
@@ -2136,7 +2136,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             } else {
               issues += "No typography issues found. Text is clean!";
             }
-            
+
             issues;
           }
         } catch (e) {
@@ -2157,7 +2157,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var result = "=== SAVED GREP SEARCHES ===\\n";
-          
+
           if (doc.findGrepPreferences.length === 0) {
             result += "No saved GREP searches found in this document.\\n";
             result += "TIP: Create and save GREP searches in Find/Change dialog.";
@@ -2171,7 +2171,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               }
               result += "\\n";
             }
-            
+
             // Special note about DATUM search
             try {
               var datumQuery = doc.findGrepPreferences.itemByName("DATUM");
@@ -2184,7 +2184,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               result += "❌ DATUM search not accessible - using fallback patterns.";
             }
           }
-          
+
           result;
         } catch (e) {
           "Error listing GREP searches: " + e.message;
@@ -2197,9 +2197,9 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
   }
 
   async cleanImportedText(args) {
-    const { 
-      frameIndex, 
-      pageIndex = 0, 
+    const {
+      frameIndex,
+      pageIndex = 0,
       useSelectedFrame = false,
       fixParagraphs = true,
       fixDashes = true,
@@ -2216,7 +2216,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var textFrame;
-          
+
           ${useSelectedFrame ? `
             var selection = app.selection;
             if (selection.length === 0 || !selection[0].hasOwnProperty('contents')) {
@@ -2232,12 +2232,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               textFrame = page.textFrames[${frameIndex}];
             }
           `}
-          
+
           if (textFrame) {
             var story = textFrame.parentStory;
             var changes = 0;
             var changeLog = "=== TEXT CLEANING REPORT ===\\n";
-            
+
             ${fixSpaces ? `
               // 1. Remove trailing spaces at end of paragraphs
               var beforeTrailing = story.contents;
@@ -2247,7 +2247,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += trailingRemoved;
                 changeLog += "✓ Removed " + trailingRemoved + " trailing space(s)\\n";
               }
-              
+
               // Remove multiple spaces
               var beforeMultiple = story.contents;
               story.contents = story.contents.replace(/  +/g, ' ');
@@ -2257,7 +2257,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "✓ Fixed " + multipleRemoved + " multiple space(s)\\n";
               }
             ` : ''}
-            
+
             ${fixParagraphs ? `
               // 2. Fix double paragraph breaks (fake spacing)
               var doublePars = (story.contents.match(/\\r\\r+/g) || []).length;
@@ -2266,7 +2266,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += doublePars;
                 changeLog += "✓ Fixed " + doublePars + " double paragraph break(s)\\n";
               }
-              
+
               // Fix line breaks that should be paragraphs (\\n to \\r)
               var lineBreaks = (story.contents.match(/\\n/g) || []).length;
               if (lineBreaks > 0) {
@@ -2275,7 +2275,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "✓ Converted " + lineBreaks + " line break(s) to paragraphs\\n";
               }
             ` : ''}
-            
+
             ${fixDashes ? `
               // 3. Fix hyphens to n-dashes for ranges and thoughts
               var hyphenRanges = (story.contents.match(/\\d+-\\d+/g) || []).length; // 1990-2000
@@ -2284,7 +2284,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += hyphenRanges;
                 changeLog += "✓ Fixed " + hyphenRanges + " number range(s) to n-dash\\n";
               }
-              
+
               var thoughtDashes = (story.contents.match(/ - /g) || []).length;
               if (thoughtDashes > 0) {
                 story.contents = story.contents.replace(/ - /g, ' – ');
@@ -2292,7 +2292,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "✓ Fixed " + thoughtDashes + " thought dash(es) to n-dash\\n";
               }
             ` : ''}
-            
+
             ${fixLists ? `
               // 4. Remove manual bullet lists and dashes
               var bulletLists = (story.contents.match(/^[•·-]\\s/gm) || []).length;
@@ -2301,7 +2301,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += bulletLists;
                 changeLog += "✓ Removed " + bulletLists + " manual bullet(s)/dash(es)\\n";
               }
-              
+
               var tabBullets = (story.contents.match(/^\\t[•·-]\\s/gm) || []).length;
               if (tabBullets > 0) {
                 story.contents = story.contents.replace(/^\\t[•·-]\\s+/gm, '');
@@ -2309,7 +2309,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "✓ Removed " + tabBullets + " tabbed bullet(s)\\n";
               }
             ` : ''}
-            
+
             ${fixChapterNumbers ? `
               // 5. Remove hardcoded chapter numbers
               var chapterNumbers = (story.contents.match(/^(Kapitel|Chapter|Teil|Part)\\s+\\d+[.:]*\\s*/gmi) || []).length;
@@ -2318,7 +2318,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes += chapterNumbers;
                 changeLog += "✓ Removed " + chapterNumbers + " hardcoded chapter number(s)\\n";
               }
-              
+
               var romanNumbers = (story.contents.match(/^[IVX]+[.:]*\\s*/gm) || []).length;
               if (romanNumbers > 0) {
                 story.contents = story.contents.replace(/^[IVX]+[.:]*\\s*/gm, '');
@@ -2326,7 +2326,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "✓ Removed " + romanNumbers + " roman numeral(s)\\n";
               }
             ` : ''}
-            
+
             ${fixFormatting ? `
               // 6. Reset manual formatting (prepare for character styles)
               try {
@@ -2339,7 +2339,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changeLog += "⚠ Could not reset formatting: " + e.message + "\\n";
               }
             ` : ''}
-            
+
             if (changes > 0) {
               changeLog += "\\n=== SUMMARY ===\\n";
               changeLog += "Total changes applied: " + changes + "\\n";
@@ -2348,7 +2348,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             } else {
               changeLog += "No issues found - text is already clean!";
             }
-            
+
             changeLog;
           }
         } catch (e) {
@@ -2371,7 +2371,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var textFrame;
-          
+
           ${useSelectedFrame ? `
             var selection = app.selection;
             if (selection.length === 0 || !selection[0].hasOwnProperty('contents')) {
@@ -2387,47 +2387,47 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               textFrame = page.textFrames[${frameIndex}];
             }
           `}
-          
+
           if (textFrame) {
             var content = textFrame.contents;
             var issues = "=== TEXT PROBLEM ANALYSIS ===\\n";
             var problemCount = 0;
-            
+
             // Check trailing spaces
             var trailingSpaces = (content.match(/ +\\r/g) || []).length;
             if (trailingSpaces > 0) {
               issues += "❌ " + trailingSpaces + " line(s) with trailing spaces\\n";
               problemCount += trailingSpaces;
             }
-            
+
             // Check double paragraph breaks
             var doublePars = (content.match(/\\r\\r+/g) || []).length;
             if (doublePars > 0) {
               issues += "❌ " + doublePars + " double paragraph break(s) (fake spacing)\\n";
               problemCount += doublePars;
             }
-            
+
             // Check line breaks instead of paragraphs
             var lineBreaks = (content.match(/\\n/g) || []).length;
             if (lineBreaks > 0) {
               issues += "❌ " + lineBreaks + " line break(s) should be paragraphs\\n";
               problemCount += lineBreaks;
             }
-            
+
             // Check hyphen ranges
             var hyphenRanges = (content.match(/\\d+-\\d+/g) || []).length;
             if (hyphenRanges > 0) {
               issues += "❌ " + hyphenRanges + " number range(s) with hyphen (should be n-dash)\\n";
               problemCount += hyphenRanges;
             }
-            
+
             // Check thought dashes
             var thoughtDashes = (content.match(/ - /g) || []).length;
             if (thoughtDashes > 0) {
               issues += "❌ " + thoughtDashes + " thought dash(es) with hyphen (should be n-dash)\\n";
               problemCount += thoughtDashes;
             }
-            
+
             // Check manual bullets
             var bulletLists = (content.match(/^[•·-]\\s/gm) || []).length;
             var tabBullets = (content.match(/^\\t[•·-]\\s/gm) || []).length;
@@ -2435,7 +2435,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               issues += "❌ " + (bulletLists + tabBullets) + " manual bullet(s)/dash(es) found\\n";
               problemCount += (bulletLists + tabBullets);
             }
-            
+
             // Check hardcoded chapter numbers
             var chapterNumbers = (content.match(/^(Kapitel|Chapter|Teil|Part)\\s+\\d+/gmi) || []).length;
             var romanNumbers = (content.match(/^[IVX]+[.:]/gm) || []).length;
@@ -2443,14 +2443,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               issues += "❌ " + (chapterNumbers + romanNumbers) + " hardcoded chapter number(s)\\n";
               problemCount += (chapterNumbers + romanNumbers);
             }
-            
+
             // Check multiple spaces
             var multipleSpaces = (content.match(/  +/g) || []).length;
             if (multipleSpaces > 0) {
               issues += "❌ " + multipleSpaces + " multiple space(s) found\\n";
               problemCount += multipleSpaces;
             }
-            
+
             // Check for manual formatting (rough estimate)
             var story = textFrame.parentStory;
             var hasManualFormatting = false;
@@ -2467,7 +2467,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 problemCount += 1;
               }
             } catch (e) {}
-            
+
             issues += "\\n=== SUMMARY ===\\n";
             if (problemCount > 0) {
               issues += "Found " + problemCount + " problem(s) in imported text\\n";
@@ -2477,7 +2477,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               issues += "✅ No major problems found - text looks clean!\\n";
               issues += "Text appears to be properly formatted for InDesign.";
             }
-            
+
             issues;
           }
         } catch (e) {
@@ -2517,17 +2517,17 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             "Invalid page index: ${pageIndex}";
           } else {
             var page = doc.pages[${pageIndex}];
-            
+
             // Create text frame
             var textFrame = page.textFrames.add();
             textFrame.geometricBounds = ["${y}mm", "${x}mm", "${y + height}mm", "${x + width}mm"];
-            
+
             // Add content
             textFrame.contents = ${JSON.stringify(content)};
-            
+
             // Apply formatting
             var story = textFrame.parentStory;
-            
+
             // Font and size
             try {
               story.characters.everyItem().appliedFont = app.fonts.itemByName("${fontFamily}\\t${fontStyle}");
@@ -2538,19 +2538,19 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 // Use default font
               }
             }
-            
+
             story.characters.everyItem().pointSize = ${fontSize};
-            
+
             // Color
             try {
               story.characters.everyItem().fillColor = doc.swatches.itemByName(${JSON.stringify(textColor)});
             } catch (e) {
               // Use default color
             }
-            
+
             // Alignment
             story.paragraphs.everyItem().justification = Justification.${alignment};
-            
+
             // Apply styles if specified
             ${paragraphStyle ? `
               try {
@@ -2560,7 +2560,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 }
               } catch (e) {}
             ` : ''}
-            
+
             ${characterStyle ? `
               try {
                 var cStyle = doc.characterStyles.itemByName(${JSON.stringify(characterStyle)});
@@ -2569,7 +2569,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 }
               } catch (e) {}
             ` : ''}
-            
+
             "Text frame created on page " + (${pageIndex} + 1) + " with content: " + ${JSON.stringify(content.substring(0, 50) + (content.length > 50 ? '...' : ''))};
           }
         } catch (e) {
@@ -2597,7 +2597,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           } else {
             var textFrame = page.textFrames[${frameIndex}];
             var story = textFrame.parentStory;
-            
+
             ${content !== undefined ? `textFrame.contents = ${JSON.stringify(content)};` : ''}
             ${fontSize !== undefined ? `story.characters.everyItem().pointSize = ${fontSize};` : ''}
             ${fontFamily !== undefined ? `
@@ -2611,7 +2611,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               } catch (e) {}
             ` : ''}
             ${alignment !== undefined ? `story.paragraphs.everyItem().justification = Justification.${alignment};` : ''}
-            
+
             "Text frame " + ${frameIndex} + " on page " + (${pageIndex} + 1) + " updated successfully";
           }
         } catch (e) {
@@ -2636,7 +2636,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           // Clear previous search settings
           app.findTextPreferences = NothingEnum.nothing;
           app.changeTextPreferences = NothingEnum.nothing;
-          
+
           // Set find preferences
           ${useGrep ? `
             app.findGrepPreferences.findWhat = "${findText.replace(/"/g, '\\"')}";
@@ -2647,10 +2647,10 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             app.findTextPreferences.caseSensitive = ${caseSensitive};
             app.findTextPreferences.wholeWord = ${wholeWord};
           `}
-          
+
           var foundItems;
           var changeCount = 0;
-          
+
           ${scope === 'document' ? `
             foundItems = ${useGrep ? 'doc.findGrep()' : 'doc.findText()'};
             changeCount = ${useGrep ? 'doc.changeGrep()' : 'doc.changeText()'}.length;
@@ -2659,13 +2659,13 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             foundItems = ${useGrep ? 'doc.findGrep()' : 'doc.findText()'};
             changeCount = ${useGrep ? 'doc.changeGrep()' : 'doc.changeText()'}.length;
           `}
-          
+
           // Clear preferences
           app.findTextPreferences = NothingEnum.nothing;
           app.changeTextPreferences = NothingEnum.nothing;
           app.findGrepPreferences = NothingEnum.nothing;
           app.changeGrepPreferences = NothingEnum.nothing;
-          
+
           "Found and replaced " + changeCount + " instances of '" + ${JSON.stringify(findText)} + "' with '" + ${JSON.stringify(replaceText)} + "'";
         } catch (e) {
           "Error in find/replace: " + e.message;
@@ -2692,7 +2692,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         try {
           var page = doc.pages[${pageIndex}];
           var imageFile = File("${validatedPath.replace(/\\/g, '\\\\')}");
-          
+
           if (!imageFile.exists) {
             "Image file not found: ${validatedPath}";
           } else {
@@ -2708,7 +2708,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               page.place(imageFile, ["${x}mm", "${y}mm"]);
               var rect = page.rectangles[page.rectangles.length - 1];
             `}
-            
+
             // Apply fit option
             switch (${JSON.stringify(fitOption)}) {
               case "PROPORTIONALLY":
@@ -2724,7 +2724,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 rect.fit(FitOptions.CENTER_CONTENT);
                 break;
             }
-            
+
             "Image placed: " + imageFile.name + " on page " + (${pageIndex} + 1);
           }
         } catch (e) {
@@ -2748,13 +2748,13 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         try {
           var page = doc.pages[${pageIndex}];
           var rect = page.rectangles.add();
-          
+
           rect.geometricBounds = ["${y}mm", "${x}mm", "${y + height}mm", "${x + width}mm"];
-          
+
           ${cornerRadius > 0 ? `
             rect.cornerRadius = "${cornerRadius}mm";
           ` : ''}
-          
+
           ${fillColor ? `
             try {
               rect.fillColor = doc.swatches.itemByName(${JSON.stringify(fillColor)});
@@ -2767,14 +2767,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               } catch (e2) {}
             }
           ` : ''}
-          
+
           ${strokeColor ? `
             try {
               rect.strokeColor = doc.swatches.itemByName(${JSON.stringify(strokeColor)});
               rect.strokeWeight = "${strokeWidth}pt";
             } catch (e) {}
           ` : ''}
-          
+
           "Rectangle created on page " + (${pageIndex} + 1) + " (${width}mm x ${height}mm)";
         } catch (e) {
           "Error creating rectangle: " + e.message;
@@ -2797,22 +2797,22 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         try {
           var page = doc.pages[${pageIndex}];
           var ellipse = page.ovals.add();
-          
+
           ellipse.geometricBounds = ["${y}mm", "${x}mm", "${y + height}mm", "${x + width}mm"];
-          
+
           ${fillColor ? `
             try {
               ellipse.fillColor = doc.swatches.itemByName(${JSON.stringify(fillColor)});
             } catch (e) {}
           ` : ''}
-          
+
           ${strokeColor ? `
             try {
               ellipse.strokeColor = doc.swatches.itemByName(${JSON.stringify(strokeColor)});
               ellipse.strokeWeight = "${strokeWidth}pt";
             } catch (e) {}
           ` : ''}
-          
+
           "Ellipse created on page " + (${pageIndex} + 1) + " (${width}mm x ${height}mm)";
         } catch (e) {
           "Error creating ellipse: " + e.message;
@@ -2836,7 +2836,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         try {
           var pStyle = doc.paragraphStyles.add();
           pStyle.name = ${JSON.stringify(name)};
-          
+
           ${baseStyle ? `
             try {
               var base = doc.paragraphStyles.itemByName(${JSON.stringify(baseStyle)});
@@ -2845,25 +2845,25 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               }
             } catch (e) {}
           ` : ''}
-          
+
           ${fontFamily ? `
             try {
               pStyle.appliedFont = app.fonts.itemByName(${JSON.stringify(fontFamily)});
             } catch (e) {}
           ` : ''}
-          
+
           ${fontSize ? `pStyle.pointSize = ${fontSize};` : ''}
           ${leading ? `pStyle.leading = ${leading};` : ''}
           ${spaceBefore ? `pStyle.spaceBefore = "${spaceBefore}mm";` : ''}
           ${spaceAfter ? `pStyle.spaceAfter = "${spaceAfter}mm";` : ''}
           ${alignment ? `pStyle.justification = Justification.${alignment};` : ''}
-          
+
           ${textColor ? `
             try {
               pStyle.fillColor = doc.swatches.itemByName(${JSON.stringify(textColor)});
             } catch (e) {}
           ` : ''}
-          
+
           "Paragraph style '${name}' created successfully";
         } catch (e) {
           "Error creating paragraph style: " + e.message;
@@ -2886,7 +2886,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         try {
           var cStyle = doc.characterStyles.add();
           cStyle.name = ${JSON.stringify(name)};
-          
+
           ${baseStyle ? `
             try {
               var base = doc.characterStyles.itemByName(${JSON.stringify(baseStyle)});
@@ -2895,7 +2895,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               }
             } catch (e) {}
           ` : ''}
-          
+
           ${fontFamily ? `
             try {
               ${fontStyle ? `
@@ -2905,16 +2905,16 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               `}
             } catch (e) {}
           ` : ''}
-          
+
           ${fontSize ? `cStyle.pointSize = ${fontSize};` : ''}
           ${tracking ? `cStyle.tracking = ${tracking};` : ''}
-          
+
           ${textColor ? `
             try {
               cStyle.fillColor = doc.swatches.itemByName(${JSON.stringify(textColor)});
             } catch (e) {}
           ` : ''}
-          
+
           "Character style '${name}' created successfully";
         } catch (e) {
           "Error creating character style: " + e.message;
@@ -2941,22 +2941,22 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             "Character style '${styleName}' not found";
           } else {
             var changes = [];
-            
+
             ${fontFamily ? `
               cStyle.appliedFont = ${JSON.stringify(fontFamily)};
               changes.push("Font Family: ${fontFamily}");
             ` : ''}
-            
+
             ${fontStyle ? `
               cStyle.fontStyle = ${JSON.stringify(fontStyle)};
               changes.push("Font Style: ${fontStyle}");
             ` : ''}
-            
+
             ${fontSize ? `
               cStyle.pointSize = ${fontSize};
               changes.push("Font Size: ${fontSize}pt");
             ` : ''}
-            
+
             ${textColor ? `
               try {
                 var colorSwatch = doc.colors.itemByName(${JSON.stringify(textColor)});
@@ -2970,12 +2970,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes.push("Warning: Could not apply color '${textColor}': " + e.message);
               }
             ` : ''}
-            
+
             ${tracking ? `
               cStyle.tracking = ${tracking};
               changes.push("Tracking: ${tracking}");
             ` : ''}
-            
+
             if (changes.length > 0) {
               "Character style '${styleName}' modified:\\n" + changes.join("\\n");
             } else {
@@ -3007,37 +3007,37 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             "Paragraph style '${styleName}' not found";
           } else {
             var changes = [];
-            
+
             ${fontFamily ? `
               pStyle.appliedFont = ${JSON.stringify(fontFamily)};
               changes.push("Font Family: ${fontFamily}");
             ` : ''}
-            
+
             ${fontSize ? `
               pStyle.pointSize = ${fontSize};
               changes.push("Font Size: ${fontSize}pt");
             ` : ''}
-            
+
             ${leading ? `
               pStyle.leading = ${leading};
               changes.push("Leading: ${leading}pt");
             ` : ''}
-            
+
             ${spaceBefore ? `
               pStyle.spaceBefore = "${spaceBefore}mm";
               changes.push("Space Before: ${spaceBefore}mm");
             ` : ''}
-            
+
             ${spaceAfter ? `
               pStyle.spaceAfter = "${spaceAfter}mm";
               changes.push("Space After: ${spaceAfter}mm");
             ` : ''}
-            
+
             ${alignment ? `
               pStyle.justification = Justification.${alignment};
               changes.push("Alignment: ${alignment}");
             ` : ''}
-            
+
             ${textColor ? `
               try {
                 var colorSwatch = doc.colors.itemByName(${JSON.stringify(textColor)});
@@ -3051,7 +3051,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes.push("Warning: Could not apply color '${textColor}': " + e.message);
               }
             ` : ''}
-            
+
             if (changes.length > 0) {
               "Paragraph style '${styleName}' modified:\\n" + changes.join("\\n");
             } else {
@@ -3083,7 +3083,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             "Object style '${styleName}' not found";
           } else {
             var changes = [];
-            
+
             ${fillColor ? `
               try {
                 var fillSwatch = doc.colors.itemByName(${JSON.stringify(fillColor)});
@@ -3097,7 +3097,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes.push("Warning: Could not apply fill color '${fillColor}': " + e.message);
               }
             ` : ''}
-            
+
             ${strokeColor ? `
               try {
                 var strokeSwatch = doc.colors.itemByName(${JSON.stringify(strokeColor)});
@@ -3111,17 +3111,17 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
                 changes.push("Warning: Could not apply stroke color '${strokeColor}': " + e.message);
               }
             ` : ''}
-            
+
             ${strokeWidth ? `
               oStyle.strokeWeight = ${strokeWidth};
               changes.push("Stroke Width: ${strokeWidth}pt");
             ` : ''}
-            
+
             ${transparency ? `
               oStyle.transparencySettings.blendingSettings.opacity = ${100 - transparency};
               changes.push("Transparency: ${transparency}%");
             ` : ''}
-            
+
             if (changes.length > 0) {
               "Object style '${styleName}' modified:\\n" + changes.join("\\n");
             } else {
@@ -3149,7 +3149,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         try {
           var oStyle = doc.objectStyles.add();
           oStyle.name = ${JSON.stringify(name)};
-          
+
           ${baseStyle ? `
             try {
               var base = doc.objectStyles.itemByName(${JSON.stringify(baseStyle)});
@@ -3158,7 +3158,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               }
             } catch (e) {}
           ` : ''}
-          
+
           ${fillColor ? `
             try {
               var fillSwatch = doc.colors.itemByName(${JSON.stringify(fillColor)});
@@ -3167,7 +3167,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               }
             } catch (e) {}
           ` : ''}
-          
+
           ${strokeColor ? `
             try {
               var strokeSwatch = doc.colors.itemByName(${JSON.stringify(strokeColor)});
@@ -3176,15 +3176,15 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               }
             } catch (e) {}
           ` : ''}
-          
+
           ${strokeWidth ? `
             oStyle.strokeWeight = ${strokeWidth};
           ` : ''}
-          
+
           ${transparency ? `
             oStyle.transparencySettings.blendingSettings.opacity = ${100 - transparency};
           ` : ''}
-          
+
           "Object style '" + oStyle.name + "' created successfully";
         } catch (e) {
           "Error creating object style: " + e.message;
@@ -3210,7 +3210,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             "Object style '${styleName}' not found";
           } else {
             var objectsToStyle = [];
-            
+
             // Strategy 1: Use selection if available
             if (app.selection.length > 0) {
               for (var i = 0; i < app.selection.length; i++) {
@@ -3228,7 +3228,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             } else {
               "No objects selected and no objectIndex specified. Please select objects or provide objectIndex.";
             }
-            
+
             if (objectsToStyle.length > 0) {
               var appliedCount = 0;
               for (var j = 0; j < objectsToStyle.length; j++) {
@@ -3264,7 +3264,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           var page = doc.pages[${pageIndex}];
           var textFrame = page.textFrames[${frameIndex}];
           var style = doc.paragraphStyles.itemByName(${JSON.stringify(styleName)});
-          
+
           if (!style.isValid) {
             "Paragraph style '${styleName}' not found";
           } else {
@@ -3274,7 +3274,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             ` : `
               textFrame.parentStory.paragraphs.everyItem().appliedParagraphStyle = style;
             `}
-            
+
             "Paragraph style '${styleName}' applied to text frame ${frameIndex}";
           }
         } catch (e) {
@@ -3296,7 +3296,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
       } else {
         var doc = app.activeDocument;
         var result = "=== DOCUMENT STYLES ===\\n\\n";
-        
+
         ${styleType === 'all' || styleType === 'paragraph' ? `
           result += "PARAGRAPH STYLES (" + doc.paragraphStyles.length + "):\\n";
           for (var i = 0; i < doc.paragraphStyles.length; i++) {
@@ -3304,7 +3304,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           }
           result += "\\n";
         ` : ''}
-        
+
         ${styleType === 'all' || styleType === 'character' ? `
           result += "CHARACTER STYLES (" + doc.characterStyles.length + "):\\n";
           for (var i = 0; i < doc.characterStyles.length; i++) {
@@ -3312,14 +3312,14 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           }
           result += "\\n";
         ` : ''}
-        
+
         ${styleType === 'all' || styleType === 'object' ? `
           result += "OBJECT STYLES (" + doc.objectStyles.length + "):\\n";
           for (var i = 0; i < doc.objectStyles.length; i++) {
             result += "  • " + doc.objectStyles[i].name + "\\n";
           }
         ` : ''}
-        
+
         result;
       }
     `;
@@ -3339,7 +3339,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var newColor;
-          
+
           if (${JSON.stringify(colorModel)} === "CMYK") {
             newColor = doc.colors.add();
             newColor.name = ${JSON.stringify(name)};
@@ -3353,7 +3353,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             newColor.space = ColorSpace.RGB;
             newColor.colorValue = [${colorValues.join(', ')}];
           }
-          
+
           "Color swatch '${name}' created (${colorModel}: ${colorValues.join(', ')})";
         } catch (e) {
           "Error creating color swatch: " + e.message;
@@ -3372,22 +3372,22 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
       } else {
         var doc = app.activeDocument;
         var result = "=== COLOR SWATCHES ===\\n\\n";
-        
+
         result += "TOTAL SWATCHES: " + doc.swatches.length + "\\n\\n";
-        
+
         for (var i = 0; i < doc.swatches.length; i++) {
           var swatch = doc.swatches[i];
           result += "• " + swatch.name;
-          
+
           try {
             if (swatch.color) {
               result += " (" + swatch.color.model + ")";
             }
           } catch (e) {}
-          
+
           result += "\\n";
         }
-        
+
         result;
       }
     `;
@@ -3408,7 +3408,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           var page = doc.pages[${pageIndex}];
           var pageItem = page.allPageItems[${objectIndex}];
           var swatch = doc.swatches.itemByName(${JSON.stringify(swatchName)});
-          
+
           if (!swatch.isValid) {
             "Color swatch '${swatchName}' not found";
           } else {
@@ -3417,7 +3417,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             } else if (${JSON.stringify(property)} === "stroke") {
               pageItem.strokeColor = swatch;
             }
-            
+
             "Color '${swatchName}' applied to ${property} of object ${objectIndex}";
           }
         } catch (e) {
@@ -3499,10 +3499,10 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           if (!exportFolder.exists) {
             exportFolder.create();
           }
-          
+
           var exportFormat;
           var fileExtension;
-          
+
           switch (${JSON.stringify(format)}) {
             case "PNG":
               exportFormat = ExportFormat.PNG_FORMAT;
@@ -3520,7 +3520,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               exportFormat = ExportFormat.PNG_FORMAT;
               fileExtension = ".png";
           }
-          
+
           var pages = [];
           ${pageRange === 'all' ? `
             for (var i = 0; i < doc.pages.length; i++) {
@@ -3531,20 +3531,20 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
             var pageNumbers = ${JSON.stringify(pageRange)}.split("-");
             var startPage = parseInt(pageNumbers[0]) - 1;
             var endPage = pageNumbers.length > 1 ? parseInt(pageNumbers[1]) - 1 : startPage;
-            
+
             for (var i = startPage; i <= endPage && i < doc.pages.length; i++) {
               pages.push(doc.pages[i]);
             }
           `}
-          
+
           for (var i = 0; i < pages.length; i++) {
             var page = pages[i];
             var fileName = doc.name.replace(/\.indd$/i, "") + "_page" + (page.documentOffset + 1) + fileExtension;
             var exportFile = File(exportFolder + "/" + fileName);
-            
+
             page.exportFile(exportFormat, exportFile);
           }
-          
+
           "Exported " + pages.length + " pages as ${format} files to: ${folderPath}";
         } catch (e) {
           "Error exporting images: " + e.message;
@@ -3572,12 +3572,12 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var epubFile = File("${validatedPath.replace(/\\/g, '\\\\')}");
-          
+
           // Set EPUB export preferences
           var epubExportPrefs = app.epubExportPreferences;
           epubExportPrefs.epubVersion = ${version === 'EPUB3' ? 'EPubVersion.EPUB_VERSION_3' : 'EPubVersion.EPUB_VERSION_2'};
           epubExportPrefs.preserveLocalOverride = true;
-          
+
           ${includeImages ? `
             epubExportPrefs.imageConversion = ImageConversion.AUTOMATIC;
             if (${JSON.stringify(imageFormat)} === "PNG") {
@@ -3588,7 +3588,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
           ` : `
             epubExportPrefs.imageConversion = ImageConversion.LINK_TO_SERVER;
           `}
-          
+
           doc.exportFile(ExportFormat.EPUB, epubFile);
           "EPUB exported successfully to: ${validatedPath}";
         } catch (e) {
@@ -3617,9 +3617,9 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         var doc = app.activeDocument;
         try {
           var packageFolder = Folder("${validatedPath.replace(/\\/g, '\\\\')}");
-          
+
           doc.packageForPrint(packageFolder, ${includeLinkedFiles}, ${includeFonts}, true, ${createReport}, "Package created by InDesign MCP Server");
-          
+
           "Document packaged successfully to: ${folderPath}";
         } catch (e) {
           "Error packaging document: " + e.message;
@@ -3634,7 +3634,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
   // =================== UTILITIES ===================
   async executeInDesignCode(args) {
     const code = (typeof args === 'string') ? args : args.code;
-    
+
     // Security: Check if arbitrary code execution is allowed
     const allowArbitraryCode = process.env.INDESIGN_ALLOW_ARBITRARY_CODE;
     if (!allowArbitraryCode || allowArbitraryCode === '0' || allowArbitraryCode.toLowerCase() === 'false') {
@@ -3647,7 +3647,7 @@ INDESIGN_ALLOW_ARBITRARY_CODE=1
 
 ⚠️  WARNING: This allows execution of any ExtendScript code, which can:
 - Access the file system
-- Make network connections  
+- Make network connections
 - Execute system commands via InDesign APIs
 - Read/modify any InDesign document data
 
@@ -3656,7 +3656,7 @@ Only enable this if you trust all users and understand the security implications
 Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
       );
     }
-    
+
     // User has explicitly enabled arbitrary code execution
     const result = await this.executeInDesignScript(code);
     return this.formatResponse(result, "Execute Custom Code");
@@ -3673,7 +3673,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
         info += "Current Page: " + (app.activeWindow.activePage ? (app.activeWindow.activePage.documentOffset + 1) : "None") + " of " + doc.pages.length + "\\n";
         info += "Zoom Level: " + Math.round(app.activeWindow.zoomPercentage) + "%\\n";
         info += "View: " + app.activeWindow.viewDisplaySetting + "\\n";
-        
+
         try {
           var currentPage = app.activeWindow.activePage || doc.pages[0];
           info += "\\n=== CURRENT PAGE CONTENT ===\\n";
@@ -3685,7 +3685,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
         } catch (e) {
           info += "\\nCould not analyze page content: " + e.message;
         }
-        
+
         info;
       }
     `;
@@ -3708,14 +3708,14 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
           var page = doc.pages[${pageIndex}];
           var textFrame = page.textFrames.add();
           textFrame.geometricBounds = ["${y}mm", "${x}mm", "${y + height}mm", "${x + width}mm"];
-          
+
           var table = textFrame.tables.add();
           table.bodyRowCount = ${rows - headerRows - footerRows};
           table.columnCount = ${columns};
-          
+
           ${headerRows > 0 ? `table.headerRowCount = ${headerRows};` : ''}
           ${footerRows > 0 ? `table.footerRowCount = ${footerRows};` : ''}
-          
+
           "Table created with " + ${rows} + " rows and " + ${columns} + " columns on page " + (${pageIndex} + 1);
         } catch (e) {
           "Error creating table: " + e.message;
@@ -3738,26 +3738,26 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
         try {
           var page = doc.pages[${pageIndex}];
           var tables = [];
-          
+
           // Collect all tables from text frames
           for (var i = 0; i < page.textFrames.length; i++) {
             for (var j = 0; j < page.textFrames[i].tables.length; j++) {
               tables.push(page.textFrames[i].tables[j]);
             }
           }
-          
+
           if (${tableIndex} >= tables.length) {
             "Table index ${tableIndex} not found. Page has " + tables.length + " tables.";
           } else {
             var table = tables[${tableIndex}];
             var tableData = ${JSON.stringify(data)};
-            
+
             for (var row = 0; row < tableData.length && row < table.rows.length; row++) {
               for (var col = 0; col < tableData[row].length && col < table.columns.length; col++) {
                 table.cells.item(row * table.columns.length + col).contents = String(tableData[row][col]);
               }
             }
-            
+
             "Table populated with " + tableData.length + " rows of data";
           }
         } catch (e) {
@@ -3784,13 +3784,13 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
           layer.name = ${JSON.stringify(name)};
           layer.visible = ${visible};
           layer.locked = ${locked};
-          
+
           ${color ? `
             try {
               layer.layerColor = UIColors.${color.toUpperCase()};
             } catch (e) {}
           ` : ''}
-          
+
           "Layer '${name}' created successfully";
         } catch (e) {
           "Error creating layer: " + e.message;
@@ -3835,7 +3835,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
       } else {
         var doc = app.activeDocument;
         var result = "=== DOCUMENT LAYERS ===\\n\\n";
-        
+
         for (var i = 0; i < doc.layers.length; i++) {
           var layer = doc.layers[i];
           result += "• " + layer.name;
@@ -3845,7 +3845,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
           }
           result += "\\n";
         }
-        
+
         result;
       }
     `;
@@ -3865,7 +3865,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
         var doc = app.activeDocument;
         try {
           var preflightProfile;
-          
+
           ${profile ? `
             preflightProfile = app.preflightProfiles.itemByName(${JSON.stringify(profile)});
             if (!preflightProfile.isValid) {
@@ -3874,10 +3874,10 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
           ` : `
             preflightProfile = app.preflightProfiles[0];
           `}
-          
+
           var preflightResults = doc.preflightProcesses.add(preflightProfile);
           var errorCount = preflightResults.preflightResultsData.length;
-          
+
           "Preflight check completed. Found " + errorCount + " issues.";
         } catch (e) {
           "Error running preflight: " + e.message;
@@ -3903,7 +3903,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
               app.activeWindow.activePage = doc.pages[${pageIndex}];
             }
           ` : ''}
-          
+
           switch (${JSON.stringify(fitOption)}) {
             case "FIT_PAGE":
               app.activeWindow.zoom(ZoomOptions.FIT_PAGE);
@@ -3917,7 +3917,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
             default:
               app.activeWindow.zoom(ZoomOptions.FIT_PAGE);
           }
-          
+
           "Zoom applied: ${fitOption}${pageIndex !== undefined ? ` on page ${pageIndex + 1}` : ''}";
         } catch (e) {
           "Error zooming: " + e.message;
@@ -3951,12 +3951,12 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
           } else {
             // Set up data merge
             doc.dataMergeProperties.dataMergeSource = dataSource;
-            
+
             var outputDir = Folder("${validatedOutputFolder.replace(/\\/g, '\\\\')}");
             if (!outputDir.exists) {
               outputDir.create();
             }
-            
+
             // Export merged documents
             ${recordRange === 'all' ? `
               doc.dataMergeProperties.exportRecords(RecordsToMerge.ALL_RECORDS, outputDir, true);
@@ -3967,7 +3967,7 @@ Usage: INDESIGN_ALLOW_ARBITRARY_CODE=1 node index.js`
               var endRecord = ranges.length > 1 ? parseInt(ranges[1]) : startRecord;
               doc.dataMergeProperties.exportRecords(RecordsToMerge.RANGE, outputDir, true, startRecord, endRecord);
             `}
-            
+
             "Data merge completed. Files saved to: ${validatedOutputFolder}";
           }
         } catch (e) {
