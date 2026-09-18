@@ -1,0 +1,8 @@
+node_modules/
+.npm-cache/
+upstream/
+artifacts/
+*.log
+.env
+config/codex.windows.toml
+config/mcp.windows.json

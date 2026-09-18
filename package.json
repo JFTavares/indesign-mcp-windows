@@ -1,0 +1,45 @@
+{
+  "name": "indesign-mcp-windows",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Windows COM port of lucdesign/indesign-mcp-server",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node --test test/bridge.test.js test/mcp.test.js test/paths.test.js",
+    "doctor": "node scripts/doctor.js",
+    "test:indesign": "node scripts/smoke-indesign.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "os": [
+    "win32"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ajv": "^8.17.1"
+  },
+  "author": "Jose Fernando Tavares",
+  "contributors": [
+    "lucdesign (original project)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JFTavares/indesign-mcp-windows.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JFTavares/indesign-mcp-windows/issues"
+  },
+  "homepage": "https://github.com/JFTavares/indesign-mcp-windows#readme",
+  "keywords": [
+    "mcp",
+    "indesign",
+    "windows",
+    "adobe",
+    "automation",
+    "extendscript"
+  ]
+}

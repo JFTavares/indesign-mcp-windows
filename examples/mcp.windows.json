@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "indesign": {
+      "command": "C:/Program Files/nodejs/node.exe",
+      "args": ["C:/Projects/indesign-mcp-windows/index.js"],
+      "env": {
+        "INDESIGN_PROGID": "InDesign.Application",
+        "INDESIGN_TIMEOUT_MS": "60000",
+        "INDESIGN_ALLOW_ARBITRARY_CODE": "0"
+      }
+    }
+  }
+}

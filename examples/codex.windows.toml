@@ -1,0 +1,11 @@
+# Replace the paths below, or run node scripts/configure.js to generate them.
+[mcp_servers.indesign]
+command = "C:/Program Files/nodejs/node.exe"
+args = ["C:/Projects/indesign-mcp-windows/index.js"]
+startup_timeout_sec = 15
+tool_timeout_sec = 90
+
+[mcp_servers.indesign.env]
+INDESIGN_PROGID = "InDesign.Application"
+INDESIGN_TIMEOUT_MS = "60000"
+INDESIGN_ALLOW_ARBITRARY_CODE = "0"

@@ -1,0 +1,12 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('..', import.meta.url));
+const configDirectory = path.join(root, 'config');
+const command = process.execPath.replace(/\\/g, '/');
+const entry = path.join(root, 'index.js').replace(/\\/g, '/');
+const env = { INDESIGN_PROGID: 'InDesign.Application', INDESIGN_TIMEOUT_MS: '60000', INDESIGN_ALLOW_ARBITRARY_CODE: '0' };
+await fs.mkdir(configDirectory, { recursive: true });
+await fs.writeFile(path.join(configDirectory, 'mcp.windows.json'), JSON.stringify({ mcpServers: { indesign: { command, args: [entry], env } } }, null, 2) + '\n');
+await fs.writeFile(path.join(configDirectory, 'codex.windows.toml'), `[mcp_servers.indesign]\ncommand = ${JSON.stringify(command)}\nargs = [${JSON.stringify(entry)}]\nstartup_timeout_sec = 15\ntool_timeout_sec = 90\n\n[mcp_servers.indesign.env]\n${Object.entries(env).map(([key, value]) => `${key} = ${JSON.stringify(value)}`).join('\n')}\n`);
+console.log(`Configuration examples written to ${configDirectory}. Merge the relevant block into your MCP client configuration.`);
