@@ -80,7 +80,7 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         // =================== DOCUMENT MANAGEMENT ===================
         {
           name: 'get_document_info',
-          description: 'Get detailed information about the current InDesign document',
+          description: 'Get document details, default margins and actual margins for every page in millimeters',
           inputSchema: { type: 'object', properties: {} },
         },
         {
@@ -99,8 +99,8 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
               slug: { type: 'number', description: 'Slug area in mm', default: 0 },
               marginTop: { type: 'number', description: 'Top margin in mm', default: 20 },
               marginBottom: { type: 'number', description: 'Bottom margin in mm', default: 20 },
-              marginLeft: { type: 'number', description: 'Left margin in mm', default: 20 },
-              marginRight: { type: 'number', description: 'Right margin in mm', default: 20 },
+              marginLeft: { type: 'number', description: 'Left margin in mm; inside margin when facingPages is true (InDesign mirrors automatically)', default: 20 },
+              marginRight: { type: 'number', description: 'Right margin in mm; outside margin when facingPages is true', default: 20 },
             },
           },
         },
@@ -902,23 +902,49 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
   // =================== DOCUMENT MANAGEMENT ===================
   async getDocumentInfo() {
     const script = `
+      (function () {
       if (app.documents.length === 0) {
-        "No document open";
-      } else {
+        return "No document open";
+      }
+      var previousUnit = app.scriptPreferences.measurementUnit;
+      app.scriptPreferences.measurementUnit = MeasurementUnits.MILLIMETERS;
+      try {
         var doc = app.activeDocument;
+        function mm(value) { return Math.round(value * 1000000) / 1000000; }
+        var facing = doc.documentPreferences.facingPages;
         var info = "=== DOCUMENT INFORMATION ===\\n";
         info += "Name: " + doc.name + "\\n";
         info += "Pages: " + doc.pages.length + "\\n";
-        info += "Width: " + doc.documentPreferences.pageWidth + "\\n";
-        info += "Height: " + doc.documentPreferences.pageHeight + "\\n";
+        info += "Width: " + mm(doc.documentPreferences.pageWidth) + " mm\\n";
+        info += "Height: " + mm(doc.documentPreferences.pageHeight) + " mm\\n";
         info += "Facing Pages: " + doc.documentPreferences.facingPages + "\\n";
         info += "Modified: " + doc.modified + "\\n";
         info += "File Path: " + (doc.saved ? doc.fullName.fsName : "Unsaved") + "\\n";
-        info += "\\n=== MARGINS ===\\n";
-        info += "Top: " + doc.marginPreferences.top + "\\n";
-        info += "Bottom: " + doc.marginPreferences.bottom + "\\n";
-        info += "Left: " + doc.marginPreferences.left + "\\n";
-        info += "Right: " + doc.marginPreferences.right + "\\n";
+        var defaults = doc.marginPreferences;
+        info += "\\n=== DOCUMENT DEFAULT MARGINS (mm) ===\\n";
+        info += "These defaults do not describe existing page overrides.\\n";
+        info += "Top: " + mm(defaults.top) + " mm\\n";
+        info += "Bottom: " + mm(defaults.bottom) + " mm\\n";
+        info += (facing ? "Inside: " : "Left: ") + mm(defaults.left) + " mm\\n";
+        info += (facing ? "Outside: " : "Right: ") + mm(defaults.right) + " mm\\n";
+        info += "\\n=== PAGE MARGINS (mm) ===\\n";
+        for (var p = 0; p < doc.pages.length; p++) {
+          var page = doc.pages[p];
+          var margins = page.marginPreferences;
+          var leftHand = facing && page.side === PageSideOptions.LEFT_HAND;
+          var differs = Math.abs(margins.top - defaults.top) > 0.000001 ||
+            Math.abs(margins.bottom - defaults.bottom) > 0.000001 ||
+            Math.abs(margins.left - defaults.left) > 0.000001 ||
+            Math.abs(margins.right - defaults.right) > 0.000001;
+          info += "Page " + (p + 1) + " (name=" + page.name +
+            ", side=" + (facing ? (leftHand ? "left" : "right") : "single") + "): " +
+            "Top=" + mm(margins.top) + " mm; Bottom=" + mm(margins.bottom) +
+            " mm; Left=" + mm(leftHand ? margins.right : margins.left) +
+            " mm; Right=" + mm(leftHand ? margins.left : margins.right) + " mm";
+          if (facing) info += "; Inside=" + mm(margins.left) + " mm; Outside=" + mm(margins.right) + " mm";
+          if (differs) info += " [differs from document defaults]";
+          info += "\\n";
+        }
         info += "\\n=== CONTENT SUMMARY ===\\n";
 
         var totalTextFrames = 0;
@@ -937,8 +963,11 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         info += "Layers: " + doc.layers.length + "\\n";
         info += "Color Swatches: " + doc.swatches.length;
 
-        info;
+        return info;
+      } finally {
+        app.scriptPreferences.measurementUnit = previousUnit;
       }
+      }());
     `;
 
     const result = await this.executeInDesignScript(script);
@@ -1011,11 +1040,23 @@ CAUTION: Only do this if you understand the risks and have verified the operatio
         doc.documentPreferences.slugRightOrOutsideOffset = "${slug}mm";
       }
 
-      // Margins
-      doc.marginPreferences.top = "${marginTop}mm";
-      doc.marginPreferences.bottom = "${marginBottom}mm";
-      doc.marginPreferences.left = "${marginLeft}mm";
-      doc.marginPreferences.right = "${marginRight}mm";
+      // Document defaults do not update already-created pages or parent pages.
+      // In facing documents InDesign interprets left/right as inside/outside;
+      // do not swap them on left-hand pages (that would mirror twice).
+      var margins = {
+        top: "${marginTop}mm", bottom: "${marginBottom}mm",
+        left: "${marginLeft}mm", right: "${marginRight}mm"
+      };
+      doc.marginPreferences.properties = margins;
+      // Parent pages also supply the margins of pages added later.
+      for (var m = 0; m < doc.masterSpreads.length; m++) {
+        for (var p = 0; p < doc.masterSpreads[m].pages.length; p++) {
+          doc.masterSpreads[m].pages[p].marginPreferences.properties = margins;
+        }
+      }
+      for (var p = 0; p < doc.pages.length; p++) {
+        doc.pages[p].marginPreferences.properties = margins;
+      }
 
       "Document created: " + ${JSON.stringify(preset)} + " (" + doc.documentPreferences.pageWidth + " x " + doc.documentPreferences.pageHeight + "), " +
       doc.pages.length + " pages, " + (doc.documentPreferences.facingPages ? "facing pages" : "single pages");

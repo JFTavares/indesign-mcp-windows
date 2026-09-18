@@ -138,6 +138,14 @@ Exemplo de pedido ao assistente conectado:
 
 As posições e dimensões são em milímetros quando indicado no esquema. Índices de páginas e quadros começam em **zero**. A maioria das ferramentas trabalha no documento ativo: evite alternar documentos enquanto uma operação estiver em execução.
 
+### Margens de documentos e páginas
+
+`create_document` aplica as margens ao padrão do documento, às páginas-mestre e a todas as páginas criadas. Assim, páginas adicionadas depois também herdam as margens das páginas-mestre, em vez de voltarem ao padrão de 12,7 mm.
+
+Com `facingPages: false`, `marginLeft` e `marginRight` significam esquerda e direita. Com `facingPages: true`, significam **interna** e **externa**: o InDesign faz o espelhamento automaticamente. Por exemplo, `marginLeft: 30` e `marginRight: 11` produzem 30 mm à esquerda no recto e 30 mm à direita no verso. Não inverta esses valores manualmente em `page.marginPreferences` nas páginas pares.
+
+`get_document_info` separa o padrão do documento das margens efetivas de cada página, informa os valores em milímetros e sinaliza diferenças. Em páginas opostas, mostra tanto esquerda/direita físicas quanto interna/externa. O padrão do documento sozinho não comprova que as guias das páginas estejam corretas. A correção em `create_document` vale para novos documentos; arquivos existentes precisam ter suas margens conferidas por página.
+
 Operações de fechamento, exclusão, salvamento com caminho e exportação exigem `confirmDestructive: true`, preservando a interface original. Esse campo deve refletir a autorização do usuário no cliente; o servidor não abre uma confirmação gráfica.
 
 Para PDF, `HighQualityPrint`, `PressQuality` e `SmallestFileSize` reconhecem predefinições padrão em português e inglês. Também é possível passar o nome exato de uma predefinição instalada. `npm.cmd run doctor` lista esses nomes.
@@ -161,9 +169,12 @@ Este é um servidor de automação **local para clientes confiáveis**, não um 
 npm.cmd test               # protocolo stdio, catálogo, geração de scripts, caminhos e ponte simulada
 npm.cmd run doctor        # consulta real de versão e predefinições via COM
 npm.cmd run test:indesign  # teste completo, gera arquivos em artifacts/
+npm.cmd run test:indesign:margins # regressão de margens com documentos temporários
 ```
 
 O teste de integração exige que não haja documentos abertos. Ele usa arquivos novos, fecha somente o documento criado por ele e grava `results.json`, INDD e PDF na pasta de sua execução. Os testes de geração verificam a sintaxe das 51 ferramentas, não todas as propriedades da API do InDesign.
+
+O teste específico `test:indesign:margins` pode ser executado com documentos abertos: cria e fecha apenas documentos temporários e restaura o documento ativo. Verifica margens de páginas e páginas-mestre, herança em páginas novas, guias espelhadas criadas pelo próprio InDesign e divergências no relatório, inclusive com unidades de visualização diferentes.
 
 Se houver falha:
 

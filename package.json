@@ -7,9 +7,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node --test test/bridge.test.js test/mcp.test.js test/paths.test.js",
+    "test": "node --test test/bridge.test.js test/mcp.test.js test/paths.test.js test/document-margins.test.js",
     "doctor": "node scripts/doctor.js",
-    "test:indesign": "node scripts/smoke-indesign.js"
+    "test:indesign": "node scripts/smoke-indesign.js",
+    "test:indesign:margins": "node scripts/test-document-margins.js"
   },
   "engines": {
     "node": ">=20"
