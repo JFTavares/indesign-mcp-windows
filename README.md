@@ -1,8 +1,16 @@
 # InDesign MCP para Windows
 
+Automação editorial com inteligência artificial para Adobe InDesign no Windows, uma iniciativa da **[Booknando](https://booknando.com.br/)**.
+
+A Booknando oferece **serviços e tecnologia para editoras**, combinando experiência em produção editorial com desenvolvimento de ferramentas que ajudam a melhorar a qualidade, a acessibilidade e a eficiência dos processos. Trabalhamos com livros digitais, EPUB, acessibilidade editorial e soluções para os desafios de produção das editoras.
+
+Este MCP faz parte desse compromisso: aproximar a inteligência artificial das ferramentas que as equipes editoriais já utilizam, automatizando tarefas no InDesign e reduzindo trabalho repetitivo.
+
+**Sua editora precisa de serviços de produção digital ou de tecnologia para o fluxo editorial? [Conheça a Booknando e fale com nossa equipe](https://booknando.com.br/).**
+
 Adaptação do [lucdesign/indesign-mcp-server](https://github.com/lucdesign/indesign-mcp-server), mantendo os nomes e as 51 ferramentas do original. A comunicação com o InDesign usa **COM + Windows PowerShell + ExtendScript**, no lugar de AppleScript. Licença MIT original preservada em `LICENSE`.
 
-**Testado neste computador com Adobe InDesign 2026 (21.6.0.57), interface em português, e Node.js 24.14.1.** O teste real cria um documento, texto, estilo, cor, camada, retângulo e tabela, salva INDD, exporta PDF e reabre o documento. As demais ferramentas foram portadas, mas nem todas as suas combinações de opções foram verificadas no aplicativo.
+O teste de integração incluído cria um documento, texto, estilo, cor, camada, retângulo e tabela, salva INDD, exporta PDF e reabre o documento. As demais ferramentas foram portadas, mas nem todas as suas combinações de opções foram verificadas no aplicativo.
 
 ## Requisitos
 
@@ -46,6 +54,73 @@ Os arquivos em `config/` são gerados na instalação com os caminhos do seu com
 Copie o bloco de `config/codex.windows.toml` para `%USERPROFILE%\.codex\config.toml`. Se já existir `[mcp_servers.indesign]`, atualize esse bloco em vez de duplicá-lo. Reinicie a conexão MCP no cliente depois de salvar.
 
 O exemplo usa `node.exe` e `index.js` com caminhos absolutos, além de um tempo limite do cliente maior que o da ponte. O formato está descrito na [documentação oficial de MCP do Codex](https://developers.openai.com/codex/mcp).
+
+## Claude Desktop e Claude Cowork
+
+### Instalar no Claude Desktop para Windows
+
+1. Conclua a instalação deste projeto e abra o InDesign.
+2. No Claude Desktop, abra **Settings > Developer > Edit Config** para localizar `claude_desktop_config.json`. O caminho usual no Windows é `%APPDATA%\Claude\claude_desktop_config.json`; prefira abrir pelo aplicativo.
+3. Adicione a entrada `indesign` de `config/mcp.windows.json` dentro de `mcpServers`. Preserve os servidores que já estiverem configurados. Para uma configuração nova, use o arquivo gerado inteiro.
+4. Encerre completamente o Claude Desktop e abra-o novamente. Confira se o servidor `indesign` está disponível nas ferramentas da conversa.
+5. Peça: **“Use get_document_info do MCP indesign para consultar o documento ativo.”**
+
+Exemplo — substitua os caminhos pelos da sua instalação:
+
+```json
+{
+  "mcpServers": {
+    "indesign": {
+      "command": "C:/Program Files/nodejs/node.exe",
+      "args": ["C:/Projects/indesign-mcp-windows/index.js"],
+      "env": {
+        "INDESIGN_PROGID": "InDesign.Application",
+        "INDESIGN_TIMEOUT_MS": "60000",
+        "INDESIGN_ALLOW_ARBITRARY_CODE": "0"
+      }
+    }
+  }
+}
+```
+
+Referência: [guia oficial de conexão de servidores MCP locais](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
+
+### Usar com Claude Cowork: disponibilidade e limites
+
+**A configuração do Desktop acima não garante que o servidor apareça no Cowork.** A documentação de conectores da Anthropic informa que servidores adicionados por `claude_desktop_config.json` não ficam disponíveis no Cowork. Já a documentação de arquitetura descreve suporte a MCPs de plugins locais em determinadas implantações desktop. São mecanismos diferentes, e este repositório fornece um servidor stdio, sem pacote de plugin ou extensão MCPB para Cowork.
+
+Para usar esta versão com Claude, siga o procedimento do **Claude Desktop com MCP local**. Caso o servidor não apareça na sessão do Cowork, use a conversa do Desktop que disponibilize as ferramentas locais. A integração específica com Cowork permanece não validada; não há instalação direta de Cowork oferecida nesta versão.
+
+O servidor precisa executar no Windows com acesso ao InDesign. Ele não fornece uma URL HTTP para a tela de conectores remotos e não pode ser iniciado dentro da VM Linux do Cowork usando o Node Linux.
+
+Referências: [conectores remotos e limites dos MCPs locais](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp) e [arquitetura do Cowork](https://support.claude.com/en/articles/14479288-claude-cowork-architecture-overview).
+
+## Instalar no Hermes Agent
+
+Use o **Hermes nativo para Windows**, no mesmo computador e usuário do InDesign. Se ainda não o tiver, siga o [guia oficial de instalação no Windows](https://hermes-agent.nousresearch.com/docs/user-guide/windows-native). Conclua também a instalação deste MCP descrita acima.
+
+1. Abra o `config.yaml` do Hermes. O instalador nativo usa normalmente `%LOCALAPPDATA%\hermes\config.yaml`. Se houver `HERMES_HOME` personalizado, use o arquivo dessa pasta.
+2. Adicione `indesign` ao bloco `mcp_servers`, preservando as demais entradas e ajustando os caminhos:
+
+```yaml
+mcp_servers:
+  indesign:
+    command: "C:/Program Files/nodejs/node.exe"
+    args:
+      - "C:/Projects/indesign-mcp-windows/index.js"
+    timeout: 90
+    connect_timeout: 15
+    supports_parallel_tool_calls: false
+    env:
+      INDESIGN_PROGID: "InDesign.Application"
+      INDESIGN_TIMEOUT_MS: "60000"
+      INDESIGN_ALLOW_ARBITRARY_CODE: "0"
+```
+
+3. Reinicie o Hermes e abra uma conversa com `hermes chat`.
+4. Peça: **“Use o MCP indesign para consultar o documento ativo.”** O Hermes descobre as ferramentas na conexão; os nomes recebem o prefixo `mcp_indesign_`.
+
+Este exemplo requer Node e MCP executando no Windows nativo. Não use o Node Linux de WSL, Docker ou de um servidor remoto para iniciar esta ponte COM. A configuração segue a [documentação MCP do Hermes](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp/); a integração ponta a ponta com o Hermes ainda não foi validada por este projeto.
 
 ## Outros clientes MCP
 
@@ -108,7 +183,7 @@ Base estudada: commit `3e3f367634ff761455dcce06222b6e581fd8b7b3` do repositório
 
 ## Licença e contribuições
 
-Código aberto sob a [licença MIT](LICENSE). Projeto original por [lucdesign](https://github.com/lucdesign/indesign-mcp-server); adaptação Windows por [Jose Fernando Tavares](https://github.com/JFTavares). Este projeto é independente e não é um produto oficial da Adobe. O Adobe InDesign é um aplicativo proprietário e precisa ser instalado e licenciado separadamente.
+Código aberto sob a [licença MIT](LICENSE). Projeto original por [lucdesign](https://github.com/lucdesign/indesign-mcp-server); adaptação Windows por [Jose Fernando Tavares](https://github.com/JFTavares), da [Booknando](https://booknando.com.br/). Este projeto é independente e não é um produto oficial da Adobe. O Adobe InDesign é um aplicativo proprietário e precisa ser instalado e licenciado separadamente.
 
 Problemas e melhorias podem ser enviados pelas [issues](https://github.com/JFTavares/indesign-mcp-windows/issues) ou por pull requests. Inclua a versão do Windows, Node e InDesign, os passos para reproduzir e logs sem dados pessoais. Antes de enviar uma alteração, execute `npm.cmd test`; mudanças na integração COM devem ser verificadas também com o InDesign.
 
